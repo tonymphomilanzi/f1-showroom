@@ -1,4 +1,4 @@
-# f1-showroom# 🏎️ F1 3D Showroom & Test Drive Experience
+## F1 3D Showroom & Test Drive Experience
 
 ![Three.js](https://img.shields.io/badge/Three.js-r128-black?style=for-the-badge&logo=three.js)
 ![JavaScript](https://img.shields.io/badge/ES6+-F7DF1E?style=for-the-badge&logo=javascript&logoColor=black)
