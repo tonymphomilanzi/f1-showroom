@@ -1,3 +1,10 @@
+`js/scene.js`
+
+import * as THREE from 'https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.module.js';
+import { OrbitControls } from 'https://cdn.jsdelivr.net/npm/three@0.128.0/examples/jsm/controls/OrbitControls.js';
+import { GLTFLoader } from 'https://cdn.jsdelivr.net/npm/three@0.128.0/examples/jsm/loaders/GLTFLoader.js';
+import { RoomEnvironment } from 'https://cdn.jsdelivr.net/npm/three@0.128.0/examples/jsm/environments/RoomEnvironment.js';
+import { gsap } from 'https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js';
 
 export class SceneManager {
     constructor() {
@@ -15,7 +22,7 @@ export class SceneManager {
             side: { position: { x: 6, y: 1.5, z: 0 }, target: { x: 0, y: 0.5, z: 0 } },
             rear: { position: { x: 0, y: 1.5, z: -6 }, target: { x: 0, y: 0.5, z: 0 } },
             top: { position: { x: 0, y: 8, z: 0 }, target: { x: 0, y: 0, z: 0 } },
-            cockpit: { position: { x: 0, y: 1.05, z: -0.5 }, target: { x: 0, y: 0.9, z: 3 } }, // Adjusted for F1 low seating
+            cockpit: { position: { x: 0, y: 1.05, z: -0.5 }, target: { x: 0, y: 0.9, z: 3 } }, 
             orbit: { position: { x: 5, y: 3, z: 5 }, target: { x: 0, y: 0.5, z: 0 } }
         };
         
@@ -56,6 +63,7 @@ export class SceneManager {
         document.getElementById('canvas-container').appendChild(this.renderer.domElement);
 
         // 4. Environment (Critical for Car Reflections)
+        // This generates a realistic reflection map for the car materials
         const pmremGenerator = new THREE.PMREMGenerator(this.renderer);
         pmremGenerator.compileEquirectangularShader();
         this.scene.environment = pmremGenerator.fromScene(new RoomEnvironment()).texture;
@@ -225,10 +233,9 @@ export class SceneManager {
                     });
 
                     // 2. Rotation Fix (Many F1 models face backwards)
-                    // Rotate BEFORE calculating bounding box to get correct X/Z dimensions
                     this.car.rotation.y = Math.PI;
 
-                    // 3. Scaling & Centering Logic (The Fix for Sinking)
+                    // 3. Scaling & Centering Logic
                     const box = new THREE.Box3().setFromObject(this.car);
                     const size = box.getSize(new THREE.Vector3());
                     const center = box.getCenter(new THREE.Vector3());
@@ -242,19 +249,14 @@ export class SceneManager {
                     box.setFromObject(this.car);
                     box.getCenter(center);
                     
-                    // A. Center X and Z on the platform
+                    // Center X and Z
                     this.car.position.x -= center.x;
                     this.car.position.z -= center.z;
 
-                    // B. Fix Y Height (Crucial Step)
-                    // Calculate distance from center.y to min.y (the bottom of wheels)
+                    // Fix Y Height: Shift car up so tires sit on the platform
                     const bottomY = box.min.y;
-                    
-                    // Shift entire car up by that amount so min.y becomes 0
                     this.car.position.y -= bottomY;
-                    
-                    // Add tiny offset to sit ON the floor, not IN it
-                    this.car.position.y += 0.2; // 0.2 to sit on top of the 0.2 high platform
+                    this.car.position.y += 0.2; // Sit on top of platform
 
                     // Add to rotating platform group
                     this.platform.add(this.car);
@@ -332,8 +334,6 @@ export class SceneManager {
             wheelGroup.add(rim);
 
             // Positioning:
-            // Y position = wheelRadius. This puts the bottom of the tire exactly at 0 local Y.
-            // Since we add this to 'this.car', and 'this.car' sits on the platform...
             wheelGroup.position.set(pos.x, wheelRadius, pos.z);
             
             this.wheels.push(wheelGroup);
@@ -341,7 +341,6 @@ export class SceneManager {
         });
 
         // Add to platform (Platform is at Y=0.1, visual height 0.2)
-        // We lift the car slightly so tires touch the top of the platform
         this.car.position.y = 0.2; 
         this.platform.add(this.car);
     }
@@ -399,15 +398,11 @@ export class SceneManager {
             onUpdate: () => this.controls.update() // Keep orbit controls synced
         });
     }
-
-    cycleCamera() {
-        // Helper for keyboard controls
-        const keys = Object.keys(this.cameraPositions);
-        let current = keys.findIndex(k => 
-            Math.abs(this.camera.position.x - this.cameraPositions[k].position.x) < 0.5
-        );
-        let next = (current + 1) % keys.length;
-        this.setCameraPosition(keys[next]);
+    
+    onWindowResize() {
+        this.camera.aspect = window.innerWidth / window.innerHeight;
+        this.camera.updateProjectionMatrix();
+        this.renderer.setSize(window.innerWidth, window.innerHeight);
     }
 
     // --- Update Loop ---
@@ -427,7 +422,6 @@ export class SceneManager {
         // 3. Floating Particles
         if (this.particles) {
             this.particles.rotation.y = elapsed * 0.05;
-            // Gentle wave effect
             this.particles.position.y = Math.sin(elapsed * 0.5) * 0.5;
         }
         
@@ -438,6 +432,5 @@ export class SceneManager {
     // Cleanup
     dispose() {
         this.renderer.dispose();
-        // Traverse and dispose geometries/materials...
     }
 }
