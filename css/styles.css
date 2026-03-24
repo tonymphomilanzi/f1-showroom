@@ -222,7 +222,7 @@ canvas { display: block; }
 }
 
 /* ============================================
-   DASHBOARD / SPEEDOMETER
+   DASHBOARD / dash-display
 ============================================ */
 #controls-panel {
     right: 40px;
