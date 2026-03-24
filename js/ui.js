@@ -1,3 +1,5 @@
+// js/ui.js
+import { gsap } from 'https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js';
 
 export class UIManager {
     constructor(app) {
