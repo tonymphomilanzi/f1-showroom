@@ -964,108 +964,192 @@ body {
 /* ============================================
    RESPONSIVE DESIGN
 ============================================ */
-@media (max-width: 1200px) {
-    #info-panel {
-        width: 340px;
-    }
-    
-    #controls-panel {
-        width: 280px;
-    }
+/* ============================================
+   Paste this after your main CSS, replacing
+   the existing RESPONSIVE DESIGN section
+   ============================================ */
+
+/* Icon Styling (New) */
+.icon-svg {
+    width: 20px;
+    height: 20px;
+    fill: currentColor;
+    transition: transform var(--transition-fast);
 }
 
-@media (max-width: 992px) {
+.btn-sound:hover .icon-svg,
+.btn-fullscreen:hover .icon-svg {
+    transform: scale(1.1);
+}
+
+/* Fix for Color Selection Checkmark */
+.check-icon {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%) scale(0);
+    width: 16px;
+    height: 16px;
+    fill: #fff; /* White checkmark */
+    filter: drop-shadow(0 1px 2px rgba(0,0,0,0.5));
+    transition: transform 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+.color-btn.active .check-icon {
+    transform: translate(-50%, -50%) scale(1);
+}
+
+/* ============================================
+   RESPONSIVE DESIGN (MOBILE FIXES)
+   ============================================ */
+
+@media (max-width: 1024px) {
+    /* Hide Nav Menu on Tablets/Mobile */
     .nav-menu {
         display: none;
     }
     
     #info-panel {
-        left: var(--spacing-lg);
+        left: var(--spacing-md);
         bottom: 100px;
-        width: 300px;
-    }
-    
-    #controls-panel {
-        right: var(--spacing-lg);
-        bottom: 100px;
+        width: 340px;
     }
 }
 
 @media (max-width: 768px) {
+    /* --- Header Adjustments --- */
     #header {
-        padding: 0 var(--spacing-lg);
         height: 60px;
+        padding: 0 var(--spacing-md);
+        background: linear-gradient(180deg, rgba(0,0,0,0.9) 0%, transparent 100%);
     }
-    
+
+    .logo {
+        flex-direction: row;
+        align-items: center;
+    }
+
     .logo-f, .logo-1 {
-        font-size: 28px;
+        font-size: 24px; /* Smaller Logo */
     }
-    
+
+    /* "Racing Team" / Showroom text adjustment in Navbar */
+    .logo-text-small {
+        font-size: 10px;
+        letter-spacing: 2px;
+        margin-left: 8px;
+        display: block; /* Ensure it stays nicely with logo */
+    }
+
+    /* --- Panel System (Bottom Sheet Style) --- */
+    /* Instead of floating boxes, panels become bottom sheets on mobile */
     #info-panel,
     #controls-panel,
     #customize-panel,
     #specs-panel {
-        left: var(--spacing-md);
-        right: var(--spacing-md);
-        bottom: 80px;
-        width: auto;
+        left: 0;
+        bottom: 0;
+        width: 100%;
         max-width: 100%;
-        transform: translateY(100%);
+        border-radius: 20px 20px 0 0; /* Rounded top corners only */
+        border-left: none;
+        border-right: none;
+        border-bottom: none;
+        transform: translateY(110%); /* Start hidden below */
+        padding: var(--spacing-lg) var(--spacing-md) var(--spacing-xl); /* Extra padding bottom for safe areas */
+        background: rgba(15, 15, 15, 0.95); /* More opaque on mobile for readability */
     }
-    
-    #camera-controls {
-        bottom: 80px;
-        overflow-x: auto;
-        max-width: 90%;
-    }
-    
-    .stat-grid {
-        grid-template-columns: repeat(2, 1fr);
-        gap: var(--spacing-sm);
-    }
-    
-    .stat-value {
-        font-size: 24px;
-    }
-    
-    #footer {
-        padding: 0 var(--spacing-lg);
-    }
-    
-    .footer-center {
-        display: none;
-    }
-}
 
-@media (max-width: 480px) {
-    #header {
-        padding: 0 var(--spacing-md);
-    }
+    /* Override the translate logic for showing panels on mobile */
+    /* You will need to update JS slightly to handle classes, or rely on the JS using GSAP to animate 'y' or 'bottom' */
     
-    .header-actions {
-        gap: var(--spacing-sm);
-    }
-    
-    .btn-sound,
-    .btn-fullscreen {
-        width: 36px;
-        height: 36px;
-        font-size: 16px;
-    }
-    
-    #info-panel {
-        padding: var(--spacing-md);
+    /* Info Panel Specifics */
+    .panel-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: var(--spacing-md);
     }
     
     .panel-header h2 {
-        font-size: 22px;
+        font-size: 20px;
+        margin: 0;
+    }
+
+    .team-badge {
+        font-size: 10px;
+        padding: 4px 8px;
+    }
+
+    .stat-grid {
+        grid-template-columns: repeat(4, 1fr); /* 4 in a row for mobile if space permits, or 2x2 */
+        gap: 8px;
+        margin-bottom: var(--spacing-md);
     }
     
-    .current-speed {
-        font-size: 40px;
+    /* If screen is very narrow, go back to 2x2 */
+    @media (max-width: 450px) {
+        .stat-grid {
+            grid-template-columns: repeat(2, 1fr);
+        }
+    }
+
+    .stat-item {
+        padding: 8px 4px;
+    }
+
+    .stat-value {
+        font-size: 20px;
+    }
+
+    .stat-label {
+        font-size: 8px;
+    }
+
+    /* --- Camera Controls --- */
+    #camera-controls {
+        bottom: auto;
+        top: 70px; /* Move to top on mobile so it doesn't conflict with bottom sheets */
+        left: 50%;
+        transform: translateX(-50%);
+        width: 90%;
+        overflow-x: auto;
+        justify-content: flex-start;
+        padding: 8px;
+        /* Hide scrollbar */
+        -ms-overflow-style: none;
+        scrollbar-width: none;
+    }
+    
+    #camera-controls::-webkit-scrollbar {
+        display: none;
+    }
+
+    .cam-btn {
+        flex-shrink: 0; /* Don't squish buttons */
+        white-space: nowrap;
+        font-size: 10px;
+        padding: 6px 12px;
+    }
+
+    /* --- Footer --- */
+    #footer {
+        display: none; /* Hide footer on mobile to save screen real estate */
+    }
+
+    /* --- Customization Panel Mobile --- */
+    .customize-content {
+        flex-direction: row;
+        flex-wrap: nowrap;
+        overflow-x: auto;
+        gap: 20px;
+        padding-bottom: 10px;
+    }
+    
+    .color-section, .material-section, .rim-section {
+        min-width: 200px; /* Horizontal scroll sections */
     }
 }
-
 /* ============================================
    UTILITY CLASSES
 ============================================ */

@@ -1,11 +1,18 @@
-// js/ui.js
 
 export class UIManager {
     constructor(app) {
         this.app = app;
         this.interactionEnabled = false;
+        
+        // FPS Calculation
         this.fpsHistory = [];
         this.lastFrameTime = performance.now();
+        
+        // Check for mobile state for animations
+        this.isMobile = window.innerWidth <= 768;
+        window.addEventListener('resize', () => {
+            this.isMobile = window.innerWidth <= 768;
+        });
     }
 
     enableInteraction() {
@@ -18,31 +25,35 @@ export class UIManager {
         document.body.style.cursor = 'wait';
     }
 
-    showNotification(message, duration = 2000) {
+    showNotification(message, duration = 3000) {
         const notification = document.getElementById('notification');
+        if (!notification) return;
+        
         const text = notification.querySelector('.notification-text');
+        if (text) text.textContent = message;
 
-        text.textContent = message;
         notification.classList.remove('hidden');
 
-        // Animate in
+        // Kill existing tweens to prevent conflict
+        gsap.killTweensOf(notification);
+
+        // Animate in (Fade + Slide Down)
         gsap.fromTo(notification,
             { opacity: 0, y: -20 },
-            { opacity: 1, y: 0, duration: 0.3, ease: 'back.out(1.7)' }
+            { opacity: 1, y: 0, duration: 0.4, ease: 'back.out(1.7)' }
         );
 
         // Auto hide
-        setTimeout(() => {
-            gsap.to(notification, {
-                opacity: 0,
-                y: -10,
-                duration: 0.3,
-                ease: 'power2.in',
-                onComplete: () => {
-                    notification.classList.add('hidden');
-                }
-            });
-        }, duration);
+        gsap.to(notification, {
+            delay: duration / 1000,
+            opacity: 0,
+            y: -10,
+            duration: 0.4,
+            ease: 'power2.in',
+            onComplete: () => {
+                notification.classList.add('hidden');
+            }
+        });
     }
 
     updateSpeedometer(speed, rpm, gear) {
@@ -55,16 +66,20 @@ export class UIManager {
         }
 
         if (rpmFill) {
-            const rpmPercent = (rpm / 15000) * 100;
+            // RPM is usually 0-15000 in F1
+            const rpmPercent = Math.min((rpm / 15000) * 100, 100);
             rpmFill.style.width = `${rpmPercent}%`;
 
-            // Change color based on RPM
+            // Dynamic Gradient based on load
             if (rpmPercent > 90) {
                 rpmFill.style.background = 'linear-gradient(90deg, #00ff00 0%, #ffff00 50%, #ff0000 80%, #ff0000 100%)';
+                rpmFill.style.boxShadow = '0 0 10px #ff0000'; // Add glow at high RPM
             } else if (rpmPercent > 70) {
                 rpmFill.style.background = 'linear-gradient(90deg, #00ff00 0%, #ffff00 60%, #ff6600 100%)';
+                rpmFill.style.boxShadow = 'none';
             } else {
                 rpmFill.style.background = 'linear-gradient(90deg, #00ff00 0%, #ffff00 50%, #ff0000 100%)';
+                rpmFill.style.boxShadow = 'none';
             }
         }
 
@@ -75,10 +90,22 @@ export class UIManager {
             else gearString = gear.toString();
             
             gearElement.textContent = gearString;
+            
+            // Highlight gear change
+            if (this.lastGear !== gear) {
+                gsap.fromTo(gearElement, 
+                    { scale: 1.5, color: '#fff' }, 
+                    { scale: 1, color: '#ffd700', duration: 0.2 }
+                );
+                this.lastGear = gear;
+            }
         }
     }
 
     updateFPS() {
+        const fpsElement = document.getElementById('fpsValue');
+        if (!fpsElement) return;
+
         const now = performance.now();
         const delta = now - this.lastFrameTime;
         this.lastFrameTime = now;
@@ -86,112 +113,88 @@ export class UIManager {
         const fps = Math.round(1000 / delta);
         this.fpsHistory.push(fps);
 
-        if (this.fpsHistory.length > 60) {
+        if (this.fpsHistory.length > 30) { // Reduced sample size for snappier updates
             this.fpsHistory.shift();
         }
 
-        // Calculate average FPS
         const avgFps = Math.round(
             this.fpsHistory.reduce((a, b) => a + b, 0) / this.fpsHistory.length
         );
 
-        const fpsElement = document.getElementById('fpsValue');
-        if (fpsElement) {
-            fpsElement.textContent = avgFps;
+        fpsElement.textContent = avgFps;
 
-            // Color code FPS
-            if (avgFps >= 55) {
-                fpsElement.style.color = '#00ff00';
-            } else if (avgFps >= 30) {
-                fpsElement.style.color = '#ffff00';
-            } else {
-                fpsElement.style.color = '#ff0000';
-            }
-        }
+        // Color code FPS
+        if (avgFps >= 55) fpsElement.style.color = '#00ff00';
+        else if (avgFps >= 30) fpsElement.style.color = '#ffff00';
+        else fpsElement.style.color = '#ff0000';
     }
 
     updateMiniMap(carPosition, carRotation) {
         const mapCanvas = document.getElementById('mapCanvas');
-        if (!mapCanvas) return;
+        if (!mapCanvas || mapCanvas.offsetParent === null) return; // Don't draw if hidden
 
         const ctx = mapCanvas.getContext('2d');
+        
+        // Match canvas internal resolution to CSS display size for sharpness
+        const rect = mapCanvas.getBoundingClientRect();
+        mapCanvas.width = rect.width;
+        mapCanvas.height = rect.height;
+
         const width = mapCanvas.width;
         const height = mapCanvas.height;
 
         // Clear canvas
-        ctx.fillStyle = 'rgba(0, 0, 0, 0.8)';
+        ctx.fillStyle = 'rgba(20, 20, 20, 0.9)';
         ctx.fillRect(0, 0, width, height);
 
-        // Draw track outline (simple circle for demo)
-        ctx.strokeStyle = '#333';
+        // Draw track outline (Simple circle for demo, represents bounds)
+        ctx.strokeStyle = '#444';
         ctx.lineWidth = 2;
         ctx.beginPath();
-        ctx.arc(width / 2, height / 2, 80, 0, Math.PI * 2);
+        // Dynamic radius based on canvas size
+        const radius = Math.min(width, height) / 2 - 20;
+        ctx.arc(width / 2, height / 2, radius, 0, Math.PI * 2);
         ctx.stroke();
 
-        // Draw car position
-        const scale = 2;
-        const carX = width / 2 + carPosition.x * scale;
-        const carY = height / 2 - carPosition.z * scale;
+        // Calculate Car Position (Mock scaling for demo)
+        // In a real app, you'd map world coordinates to map coordinates
+        const mapScale = 4; 
+        const carX = width / 2 + carPosition.x * mapScale;
+        const carY = height / 2 - carPosition.z * mapScale;
 
-        // Draw car indicator
+        // Draw Car Arrow
         ctx.save();
         ctx.translate(carX, carY);
-        ctx.rotate(-carRotation);
+        ctx.rotate(-carRotation); // Rotate arrow to match car heading
 
         ctx.fillStyle = '#e10600';
         ctx.beginPath();
-        ctx.moveTo(0, -6);
-        ctx.lineTo(-4, 6);
-        ctx.lineTo(4, 6);
+        ctx.moveTo(0, -8);
+        ctx.lineTo(-5, 6);
+        ctx.lineTo(0, 4); // Indent at bottom
+        ctx.lineTo(5, 6);
         ctx.closePath();
         ctx.fill();
 
         ctx.restore();
-
-        // Draw glow effect
-        ctx.shadowColor = '#e10600';
-        ctx.shadowBlur = 10;
-        ctx.fillStyle = '#e10600';
-        ctx.beginPath();
-        ctx.arc(carX, carY, 3, 0, Math.PI * 2);
-        ctx.fill();
-        ctx.shadowBlur = 0;
     }
 
     highlightControl(key) {
+        if (!key) return;
+        // Escape special characters if necessary, though single letters are fine
         const keyElement = document.querySelector(`.key[data-key="${key.toUpperCase()}"]`);
         if (keyElement) {
             keyElement.classList.add('active');
-            
-            gsap.to(keyElement, {
-                scale: 0.95,
-                duration: 0.1,
-                ease: 'power2.out'
-            });
+            gsap.to(keyElement, { scale: 0.9, duration: 0.1 });
         }
     }
 
     unhighlightControl(key) {
+        if (!key) return;
         const keyElement = document.querySelector(`.key[data-key="${key.toUpperCase()}"]`);
         if (keyElement) {
             keyElement.classList.remove('active');
-            
-            gsap.to(keyElement, {
-                scale: 1,
-                duration: 0.1,
-                ease: 'power2.out'
-            });
-        }
-    }
-
-    setLoading(isLoading) {
-        if (isLoading) {
-            this.disableInteraction();
-            document.body.classList.add('loading');
-        } else {
-            this.enableInteraction();
-            document.body.classList.remove('loading');
+            gsap.to(keyElement, { scale: 1, duration: 0.1 });
         }
     }
 
@@ -200,33 +203,47 @@ export class UIManager {
         const loadingText = document.querySelector('.loading-text');
         const loadingPercent = document.querySelector('.loading-percent');
 
-        if (loadingBar) {
-            loadingBar.style.width = `${percent}%`;
-        }
-
-        if (loadingText && message) {
-            loadingText.textContent = message;
-        }
-
-        if (loadingPercent) {
-            loadingPercent.textContent = `${Math.round(percent)}%`;
-        }
+        if (loadingBar) loadingBar.style.width = `${percent}%`;
+        if (loadingText && message) loadingText.textContent = message;
+        if (loadingPercent) loadingPercent.textContent = `${Math.round(percent)}%`;
     }
 
+    /**
+     * Logic to toggle panels.
+     * Updated to handle Mobile Bottom Sheets vs Desktop Side Panels
+     */
     togglePanel(panelId, show) {
         const panel = document.getElementById(panelId);
         if (!panel) return;
 
+        // Reset any running animations on this element
+        gsap.killTweensOf(panel);
+
         if (show) {
             panel.classList.remove('hidden');
-            gsap.fromTo(panel,
-                { opacity: 0, x: 50 },
-                { opacity: 1, x: 0, duration: 0.5, ease: 'power3.out' }
-            );
+            
+            // Animation configuration based on device
+            const initialVars = this.isMobile 
+                ? { y: '100%', x: 0, opacity: 0 }  // Slide up from bottom on mobile
+                : { x: 50, y: 0, opacity: 0 };     // Slide left from side on desktop
+
+            const targetVars = { 
+                opacity: 1, 
+                x: 0, 
+                y: 0, 
+                duration: 0.5, 
+                ease: 'power3.out' 
+            };
+
+            gsap.fromTo(panel, initialVars, targetVars);
         } else {
+            // Exit animation
+            const exitVars = this.isMobile
+                ? { y: '100%', opacity: 0 }
+                : { x: 50, opacity: 0 };
+
             gsap.to(panel, {
-                opacity: 0,
-                x: 50,
+                ...exitVars,
                 duration: 0.3,
                 ease: 'power2.in',
                 onComplete: () => {
@@ -236,19 +253,30 @@ export class UIManager {
         }
     }
 
-    // Color picker helper
-    createColorPicker(container, colors, onSelect) {
-        colors.forEach(color => {
-            const btn = document.createElement('button');
-            btn.className = 'color-btn';
-            btn.style.background = color;
-            btn.dataset.color = color;
-            btn.addEventListener('click', () => {
-                container.querySelectorAll('.color-btn').forEach(b => b.classList.remove('active'));
-                btn.classList.add('active');
-                onSelect(color);
+    /**
+     * Setups up listeners for existing Color/Rim/Material buttons in the DOM
+     */
+    setupOptionSelectors(selectorClass, onSelect) {
+        const buttons = document.querySelectorAll(selectorClass);
+        buttons.forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                // UI Update
+                buttons.forEach(b => b.classList.remove('active'));
+                
+                // Handle button click or svg click bubbling
+                const targetBtn = e.target.closest('button');
+                if(targetBtn) targetBtn.classList.add('active');
+
+                // Logic Callback
+                // Determine what data attribute to pass back based on class
+                if (selectorClass.includes('color')) {
+                    onSelect(targetBtn.dataset.color);
+                } else if (selectorClass.includes('material')) {
+                    onSelect(targetBtn.dataset.material);
+                } else if (selectorClass.includes('rim')) {
+                    onSelect(targetBtn.dataset.rim);
+                }
             });
-            container.appendChild(btn);
         });
     }
 }

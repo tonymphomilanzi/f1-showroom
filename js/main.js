@@ -15,73 +15,71 @@ class F1ShowroomApp {
         this.currentView = 'showroom';
         this.isLoaded = false;
         this.isDriving = false;
+        this.isMuted = false;
         
+        // Initialize the app
         this.init();
     }
     
     async init() {
         try {
-            // Initialize managers
+            // 1. Initialize Managers
             this.sceneManager = new SceneManager();
             this.animationManager = new AnimationManager();
             this.uiManager = new UIManager(this);
             
-            // Setup scene
+            // 2. Setup Three.js Scene
             await this.sceneManager.init();
             
-            // Load the F1 car model
+            // 3. Setup UI Events (Listeners)
+            this.setupEventListeners();
+
+            // 4. Load Content (Car)
             await this.loadCar();
             
-            // Initialize car controls
+            // 5. Initialize Car Physics/Controls (Requires Car to be loaded)
             this.carControls = new CarControls(this.sceneManager.car, this.sceneManager);
             
-            // Setup event listeners
-            this.setupEventListeners();
-            
-            // Start the opening animation
-            this.startOpeningSequence();
-            
-            // Start render loop
+            // 6. Start the Game Loop
             this.animate();
             
+            // 7. Play Opening Animation
+            this.startOpeningSequence();
+            
         } catch (error) {
-            console.error('Error initializing app:', error);
+            console.error('CRITICAL ERROR:', error);
+            alert('Failed to initialize application. See console for details.');
         }
     }
     
     async loadCar() {
+        // UI References
         const loadingBar = document.querySelector('.loading-bar');
         const loadingPercent = document.querySelector('.loading-percent');
         const loadingText = document.querySelector('.loading-text');
         
+        // ============================================
+        // 🔧 CONFIG: Set your model path here
+        // ============================================
+        // If null, it loads the internal placeholder car
+        const modelPath = null; 
+        // const modelPath = './models/f1_car/scene.gltf'; 
+        // ============================================
+
         try {
-            // ============================================
-            // MODEL PATH CONFIGURATION
-            // ============================================
-            // Option 1: Use a real model (uncomment and set path)
-             const modelPath = './models/f1_car/scene.gltf';
-            // const modelPath = './models/f1_car/scene.glb';
-            
-            // Option 2: Use placeholder (no model needed)
-            //const modelPath = null;
-            // ============================================
-            
             await this.sceneManager.loadCarModel(
                 modelPath,
                 (progress) => {
+                    // Update Loading UI
                     const percent = Math.round(progress * 100);
-                    loadingBar.style.width = `${percent}%`;
-                    loadingPercent.textContent = `${percent}%`;
+                    if (loadingBar) loadingBar.style.width = `${percent}%`;
+                    if (loadingPercent) loadingPercent.textContent = `${percent}%`;
                     
-                    // Update loading message
-                    if (percent < 30) {
-                        loadingText.textContent = 'Loading Assets...';
-                    } else if (percent < 60) {
-                        loadingText.textContent = 'Building Car Model...';
-                    } else if (percent < 90) {
-                        loadingText.textContent = 'Applying Materials...';
-                    } else {
-                        loadingText.textContent = 'Finalizing...';
+                    if (loadingText) {
+                        if (percent < 30) loadingText.textContent = 'Loading Assets...';
+                        else if (percent < 60) loadingText.textContent = 'Assembling Chassis...';
+                        else if (percent < 90) loadingText.textContent = 'Painting Bodywork...';
+                        else loadingText.textContent = 'Final Polish...';
                     }
                 }
             );
@@ -89,28 +87,31 @@ class F1ShowroomApp {
             this.isLoaded = true;
             
         } catch (error) {
-            console.error('Error loading car:', error);
-            loadingText.textContent = 'Using placeholder model...';
+            console.warn('Model load failed, falling back to placeholder:', error);
+            if (loadingText) loadingText.textContent = 'Loading Backup Car...';
             
-            // Create a placeholder car if model fails to load
+            // Fallback to procedural car
             this.sceneManager.createPlaceholderCar();
-            loadingBar.style.width = '100%';
-            loadingPercent.textContent = '100%';
+            
+            if (loadingBar) loadingBar.style.width = '100%';
+            if (loadingPercent) loadingPercent.textContent = '100%';
             this.isLoaded = true;
         }
     }
     
     startOpeningSequence() {
         this.animationManager.playOpeningSequence(() => {
-            // Callback when opening is complete
+            // Enable interaction only after curtain rises
             this.uiManager.enableInteraction();
-            // Start auto-rotation
             this.sceneManager.toggleRotation(true);
+            
+            // Show initial view elements
+            this.animationManager.showShowroomView();
         });
     }
     
     setupEventListeners() {
-        // Navigation
+        // --- Navigation ---
         document.querySelectorAll('.nav-link').forEach(link => {
             link.addEventListener('click', (e) => {
                 e.preventDefault();
@@ -119,189 +120,180 @@ class F1ShowroomApp {
             });
         });
         
-        // Explore button
+        // --- Action Buttons ---
         document.getElementById('exploreBtn')?.addEventListener('click', () => {
             this.switchView('drive');
         });
         
-        // Back to showroom
         document.getElementById('backToShowroom')?.addEventListener('click', () => {
             this.switchView('showroom');
         });
         
-        // Camera controls
+        // --- Camera System ---
         document.querySelectorAll('.cam-btn').forEach(btn => {
             btn.addEventListener('click', (e) => {
                 const cam = e.target.dataset.cam;
-                this.changeCameraView(cam);
+                
+                // Update UI active state
+                document.querySelectorAll('.cam-btn').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                
+                this.sceneManager.setCameraPosition(cam);
             });
         });
         
-        // Color customization
-        document.querySelectorAll('.color-btn').forEach(btn => {
-            btn.addEventListener('click', (e) => {
-                const color = e.target.dataset.color;
-                this.changeCarColor(color);
-                document.querySelectorAll('.color-btn').forEach(b => b.classList.remove('active'));
-                e.target.classList.add('active');
-            });
-        });
+        // --- Customization (Colors/Materials) ---
+        // Using helper from UIManager to keep code clean
+        this.uiManager.setupOptionSelectors('.color-btn', (val) => this.changeCarColor(val));
+        this.uiManager.setupOptionSelectors('.material-btn', (val) => this.changeCarMaterial(val));
+        this.uiManager.setupOptionSelectors('.rim-btn', (val) => console.log('Rim style:', val)); // Placeholder logic
         
-        // Material customization
-        document.querySelectorAll('.material-btn').forEach(btn => {
-            btn.addEventListener('click', (e) => {
-                const material = e.target.dataset.material;
-                this.changeCarMaterial(material);
-                document.querySelectorAll('.material-btn').forEach(b => b.classList.remove('active'));
-                e.target.classList.add('active');
-            });
-        });
+        // --- Global Toggles ---
+        document.getElementById('fullscreenToggle')?.addEventListener('click', () => this.toggleFullscreen());
+        document.getElementById('soundToggle')?.addEventListener('click', () => this.toggleSound());
         
-        // Fullscreen
-        document.getElementById('fullscreenToggle')?.addEventListener('click', () => {
-            this.toggleFullscreen();
-        });
-        
-        // Sound toggle
-        document.getElementById('soundToggle')?.addEventListener('click', () => {
-            this.toggleSound();
-        });
-        
-        // Window resize
-        window.addEventListener('resize', () => {
-            this.sceneManager.onWindowResize();
-        });
-        
-        // Keyboard controls for driving
+        // --- Input Handling ---
+        // Bind 'this' to methods to preserve class context
         document.addEventListener('keydown', (e) => this.handleKeyDown(e));
         document.addEventListener('keyup', (e) => this.handleKeyUp(e));
     }
     
-  switchView(view) {
-    if (view === this.currentView) return;
-    
-    this.currentView = view;
-    
-    document.querySelectorAll('.nav-link').forEach(link => {
-        link.classList.toggle('active', link.dataset.view === view);
-    });
-    
-    this.animationManager.hidePanels();
-
-    // ✅ Reset platform rotation when entering drive mode
-    this.sceneManager.platform.rotation.y = 0;
-
-    switch(view) {
-        case 'showroom':
-            this.isDriving = false;
-            this.carControls?.disable();
-            this.sceneManager.controls.enabled = true;
-            this.sceneManager.toggleRotation(true);
-            this.animationManager.showShowroomView();
-            break;
-            
-        case 'drive':
-            this.isDriving = true;
-            this.sceneManager.toggleRotation(false);
-            this.carControls.reset();
-            this.carControls.enable();
-            this.sceneManager.controls.enabled = false;
-            this.animationManager.showDriveView();
-            break;
-            
-        case 'specs':
-            this.isDriving = false;
-            this.carControls?.disable();
-            this.sceneManager.controls.enabled = true;
-            this.sceneManager.toggleRotation(true);
-            this.animationManager.showSpecsView();
-            break;
-            
-        case 'customize':
-            this.isDriving = false;
-            this.carControls?.disable();
-            this.sceneManager.controls.enabled = true;
-            this.sceneManager.toggleRotation(true);
-            this.sceneManager.setCameraPosition('side');
-            this.animationManager.showCustomizeView();
-            break;
-    }
-}
-    
-    changeCameraView(cam) {
-        document.querySelectorAll('.cam-btn').forEach(btn => {
-            btn.classList.toggle('active', btn.dataset.cam === cam);
+    switchView(view) {
+        if (view === this.currentView) return;
+        
+        // Update Nav UI
+        document.querySelectorAll('.nav-link').forEach(link => {
+            link.classList.toggle('active', link.dataset.view === view);
         });
         
-        this.sceneManager.setCameraPosition(cam);
+        this.currentView = view;
+        this.animationManager.hideAllPanels();
+
+        switch(view) {
+            case 'showroom':
+                this.setDrivingMode(false);
+                this.sceneManager.toggleRotation(true);
+                this.sceneManager.setCameraPosition('orbit');
+                this.animationManager.showShowroomView();
+                break;
+                
+            case 'drive':
+                this.setDrivingMode(true);
+                this.sceneManager.toggleRotation(false);
+                // Ensure platform aligns with road before driving off
+                if(this.sceneManager.platform) {
+                    this.sceneManager.platform.rotation.y = 0; 
+                }
+                this.animationManager.showDriveView();
+                break;
+                
+            case 'specs':
+                this.setDrivingMode(false);
+                this.sceneManager.toggleRotation(true);
+                this.sceneManager.setCameraPosition('side'); // Good angle for specs
+                this.animationManager.showSpecsView();
+                break;
+                
+            case 'customize':
+                this.setDrivingMode(false);
+                this.sceneManager.toggleRotation(true);
+                this.sceneManager.setCameraPosition('front'); // Good angle for details
+                this.animationManager.showCustomizeView();
+                break;
+        }
+    }
+
+    setDrivingMode(enabled) {
+        this.isDriving = enabled;
+        
+        if (enabled) {
+            this.carControls.enable();
+            // In driving mode, we disable OrbitControls so the mouse doesn't spin the camera
+            this.sceneManager.controls.enabled = false; 
+        } else {
+            this.carControls.disable();
+            this.sceneManager.controls.enabled = true;
+        }
     }
     
+    // --- Customization Wrappers ---
     changeCarColor(color) {
         this.sceneManager.setCarColor(color);
-        this.uiManager.showNotification(`Color changed`);
+        this.uiManager.showNotification('Color Applied');
     }
     
     changeCarMaterial(material) {
         this.sceneManager.setCarMaterial(material);
-        this.uiManager.showNotification(`Finish changed to ${material}`);
+        this.uiManager.showNotification(`Finish: ${material.charAt(0).toUpperCase() + material.slice(1)}`);
     }
     
+    // --- Input Handlers ---
     handleKeyDown(e) {
-        if (!this.isDriving) return;
-        
-        this.carControls?.handleKeyDown(e);
-        
-        // Visual feedback for controls
-        const key = document.querySelector(`.key[data-key="${e.key.toUpperCase()}"]`);
-        if (key) key.classList.add('active');
+        // Global Shortcuts
+        if (e.key === 'f') this.toggleFullscreen();
+        if (e.key === 'm') this.toggleSound();
+        if (e.key === 'Escape' && this.isDriving) this.switchView('showroom');
+
+        // Driving Controls
+        if (this.isDriving && this.carControls) {
+            this.carControls.handleKeyDown(e);
+            this.uiManager.highlightControl(e.key);
+        }
     }
     
     handleKeyUp(e) {
-        if (!this.isDriving) return;
-        
-        this.carControls?.handleKeyUp(e);
-        
-        // Remove visual feedback
-        const key = document.querySelector(`.key[data-key="${e.key.toUpperCase()}"]`);
-        if (key) key.classList.remove('active');
+        if (this.isDriving && this.carControls) {
+            this.carControls.handleKeyUp(e);
+            this.uiManager.unhighlightControl(e.key);
+        }
     }
     
+    // --- System Toggles ---
     toggleFullscreen() {
         if (!document.fullscreenElement) {
-            document.documentElement.requestFullscreen();
-            this.uiManager.showNotification('Fullscreen Mode');
+            document.documentElement.requestFullscreen().catch(err => {
+                console.log(`Error attempting to enable fullscreen: ${err.message}`);
+            });
+            this.uiManager.showNotification('Fullscreen Enabled');
         } else {
             document.exitFullscreen();
-            this.uiManager.showNotification('Exited Fullscreen');
+            this.uiManager.showNotification('Fullscreen Disabled');
         }
     }
     
     toggleSound() {
-        const icon = document.querySelector('.sound-icon');
-        if (icon.textContent === '🔊') {
-            icon.textContent = '🔇';
-            this.uiManager.showNotification('Sound Off');
-        } else {
-            icon.textContent = '🔊';
-            this.uiManager.showNotification('Sound On');
+        this.isMuted = !this.isMuted;
+        
+        // Visual Update
+        const btn = document.getElementById('soundToggle');
+        if (btn) {
+            btn.style.opacity = this.isMuted ? '0.5' : '1';
         }
+
+        // Logic (Placeholder for actual audio implementation)
+        // if(this.audioManager) this.audioManager.setMute(this.isMuted);
+        
+        this.uiManager.showNotification(this.isMuted ? 'Sound Muted' : 'Sound Enabled');
     }
     
+    // --- Main Loop ---
     animate() {
         requestAnimationFrame(() => this.animate());
         
+        // 1. Get Time Delta
         const delta = this.sceneManager.clock.getDelta();
         
-        // Update car controls if driving
+        // 2. Physics & Logic
         if (this.isDriving && this.carControls) {
             this.carControls.update(delta);
+            
+            // Update UI Elements tied to physics
             this.uiManager.updateSpeedometer(
                 this.carControls.speed, 
                 this.carControls.rpm, 
                 this.carControls.gear
             );
             
-            // Update mini map
             if (this.sceneManager.car) {
                 this.uiManager.updateMiniMap(
                     this.sceneManager.car.position,
@@ -310,15 +302,15 @@ class F1ShowroomApp {
             }
         }
         
-        // Update scene
+        // 3. Render Scene
         this.sceneManager.update();
         
-        // Update FPS counter
+        // 4. Performance Monitoring
         this.uiManager.updateFPS();
     }
 }
 
-// Initialize app when DOM is loaded
+// Start App when DOM is ready
 document.addEventListener('DOMContentLoaded', () => {
-    new F1ShowroomApp();
+    window.app = new F1ShowroomApp(); // Assign to window for debugging
 });
