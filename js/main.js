@@ -62,8 +62,8 @@ class F1ShowroomApp {
         // 🔧 CONFIG: Set your model path here
         // ============================================
         // If null, it loads the internal placeholder car
-        const modelPath = null; 
-        // const modelPath = './models/f1_car/scene.gltf'; 
+        //const modelPath = null; 
+         const modelPath = './models/f1_car/scene.gltf'; 
         // ============================================
 
         try {
