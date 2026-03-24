@@ -25,7 +25,7 @@ This project demonstrates high-fidelity 3D rendering in the browser, featuring a
 ### 🎮 Driving Physics
 - **Arcade Controls:** Acceleration, braking, steering, and handbrake logic.
 - **Drift Mechanics:** Calculations for sliding friction and visual wheel turning.
-- **HUD:** Real-time dash-display (km/h), RPM gauge with shift lights, and gear indicator.
+- **HUD:** Real-time Speedometer (km/h), RPM gauge with shift lights, and gear indicator.
 - **Mini-Map:** 2D Canvas overlay tracking car position and rotation.
 
 ### 📱 Responsive Design

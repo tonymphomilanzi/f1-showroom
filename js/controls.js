@@ -161,31 +161,38 @@ export class CarControls {
         this.car.position.addScaledVector(this.velocity, delta);
     }
 
-    _updateVisuals(delta) {
-        // 1. Wheel Rotation (Visual only)
-        const wheelRollSpeed = (this.speed / 10);
-        
-        // Assuming your GLTF has wheel objects or you passed them in
-        // Usually index 0,1 are front, 2,3 are rear
-        this.wheels.forEach((wheel, i) => {
-            wheel.rotation.x += wheelRollSpeed * delta;
-            
-            // Front wheel steering visual
-            if (i < 2) {
-                wheel.rotation.y = this.steeringAngle * 1.5;
+  // controls.js
+_updateVisuals(delta) {
+    if (!this.car) return;
+
+    const wheelSpeed = (this.speed / 10);
+    
+    // Find wheels if we haven't yet
+    if (this.wheels.length === 0) {
+        this.car.traverse(obj => {
+            if (obj.isMesh && obj.name.toLowerCase().includes('wheel')) {
+                this.wheels.push(obj);
             }
         });
-
-        // 2. Body Roll (Chassis Tilt)
-        // Tilt the car based on turn intensity and speed
-        const rollTarget = -this.steeringAngle * (Math.abs(this.speed) / CONFIG.MAX_SPEED) * CONFIG.BODY_ROLL_MAX;
-        this.bodyRoll = THREE.MathUtils.lerp(this.bodyRoll, rollTarget, 5 * delta);
-        this.car.rotation.z = this.bodyRoll;
-        
-        // 3. Pitch (Nose dive on brake)
-        const pitchTarget = this.keys.forward ? -0.01 : (this.keys.backward ? 0.02 : 0);
-        this.car.rotation.x = THREE.MathUtils.lerp(this.car.rotation.x, pitchTarget, 4 * delta);
     }
+
+    this.wheels.forEach((wheel) => {
+        // 1. Roll wheels forward/back
+        wheel.rotation.x += wheelSpeed * delta;
+        
+        // 2. Turn front wheels left/right
+        // Most models name front wheels with 'FL' or 'FR' or 'Front'
+        if (wheel.name.toLowerCase().includes('front') || 
+            wheel.name.toLowerCase().includes('_f')) {
+            // Apply steering angle to Y axis
+            wheel.rotation.y = this.steeringAngle * 1.5; 
+        }
+    });
+
+    // Body Tilt (Roll)
+    const rollTarget = -this.steeringAngle * (Math.abs(this.speed) / 200) * 0.08;
+    this.car.rotation.z = THREE.MathUtils.lerp(this.car.rotation.z, rollTarget, 5 * delta);
+}
 
     _updateEngineData() {
         const absSpeed = Math.abs(this.speed);

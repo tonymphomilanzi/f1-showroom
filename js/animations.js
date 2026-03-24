@@ -81,8 +81,8 @@ export class AnimationManager {
         this.animatePanel('controls-panel', 'show', { side: 'right' });
         this.animateUIElement('#mini-map', 'show', { delay: 0.4 });
         
-        // Punchy dash-display reveal
-        gsap.fromTo('.dash-display', 
+        // Punchy Speedometer reveal
+        gsap.fromTo('.data-display', 
             { scale: 0.5, opacity: 0, rotation: -45 },
             { scale: 1, opacity: 1, rotation: 0, duration: 0.8, ease: "back.out(1.7)", delay: 0.2 }
         );
@@ -130,7 +130,7 @@ export class AnimationManager {
     }
 
     hideAllPanels(onComplete) {
-        const activePanels = document.querySelectorAll(`${this.panels}:not(.hidden), .dash-display:not(.hidden), #mini-map:not(.hidden)`);
+        const activePanels = document.querySelectorAll(`${this.panels}:not(.hidden), .speedometer:not(.hidden), #mini-map:not(.hidden)`);
         
         if (activePanels.length === 0) {
             if (onComplete) onComplete();

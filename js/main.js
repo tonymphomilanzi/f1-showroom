@@ -46,20 +46,52 @@ class F1ShowroomApp {
         }
     }
 
-    async handleLoading() {
-        const updateUI = (p) => this.uiManager.updateLoader(p);
+    // main.js
+async handleLoading() {
+    const updateUI = (p) => this.uiManager.updateLoader(p);
 
-        try {
-            await this.sceneManager.loadCarModel(this.config.modelPath, updateUI);
-        } catch (e) {
-            console.warn("Loading error, using placeholder.", e);
-            this.sceneManager.createPlaceholderCar();
-            updateUI(1);
-        }
+    try {
+        await this.sceneManager.loadCarModel(this.config.modelPath, updateUI);
         
-        this.state.isLoaded = true;
+        // IMPORTANT: Initialize controls ONLY after car is loaded
+        this.carControls = new CarControls(this.sceneManager.car, this.sceneManager);
+        
+    } catch (e) {
+        console.warn("Loading error, using placeholder.", e);
+        this.sceneManager.createPlaceholderCar();
+        this.carControls = new CarControls(this.sceneManager.car, this.sceneManager);
+        updateUI(1);
     }
+    
+    this.state.isLoaded = true;
+}
 
+startApp() {
+    this.animate();
+    
+    this.animationManager.playOpeningSequence(() => {
+        this.uiManager.enableInteraction();
+        this.sceneManager.toggleRotation(true);
+        this.switchView('showroom');
+        
+        // START MUSIC on first interaction
+        document.addEventListener('click', () => {
+            if (this.sceneManager.sound && !this.sceneManager.sound.isPlaying) {
+                this.sceneManager.sound.play();
+            }
+        }, { once: true });
+    });
+}
+
+// Update the sound toggle listener
+toggleSound() {
+    this.state.isMuted = !this.state.isMuted;
+    if (this.sceneManager.sound) {
+        if (this.state.isMuted) this.sceneManager.sound.setVolume(0);
+        else this.sceneManager.sound.setVolume(0.4);
+    }
+    this.uiManager.showNotification(this.state.isMuted ? 'Audio Muted' : 'Audio Online');
+}
     startApp() {
         // Start Loops
         this.animate();

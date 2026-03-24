@@ -14,6 +14,7 @@ export class SceneManager {
         this.platform = null;
         this.floorGroup = null;
         this.wheels = [];
+         this.sound = null;
         this.clock = new THREE.Clock();
 
         this.cameraPositions = {
@@ -46,6 +47,7 @@ export class SceneManager {
         this.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
         this.renderer.outputColorSpace = THREE.SRGBColorSpace;
         this.renderer.toneMapping = THREE.ACESFilmicToneMapping;
+         this.setupAudio('./sounds/background-music.mp3'); // Change to your path
 
         document.getElementById('canvas-container').appendChild(this.renderer.domElement);
 
@@ -66,6 +68,22 @@ export class SceneManager {
 
         window.addEventListener('resize', () => this.onWindowResize());
     }
+
+ setupAudio(path) {
+        const listener = new THREE.AudioListener();
+        this.camera.add(listener);
+
+        this.sound = new THREE.Audio(listener);
+        const audioLoader = new THREE.AudioLoader();
+        
+        audioLoader.load(path, (buffer) => {
+            this.sound.setBuffer(buffer);
+            this.sound.setLoop(true);
+            this.sound.setVolume(0.4);
+        });
+    }
+   
+
 
     toggleRotation(bool) {
         this.isRotating = bool;
