@@ -91,8 +91,7 @@ export class SceneManager {
         redRim.lookAt(0, 0, 0);
         this.scene.add(redRim);
     }
-
-    setupShowroom() {
+setupShowroom() {
         this.floorGroup = new THREE.Group();
         this.scene.add(this.floorGroup);
 
@@ -104,6 +103,7 @@ export class SceneManager {
         floor.receiveShadow = true;
         this.floorGroup.add(floor);
 
+        // Platform Group - This will hold the mesh and the car
         this.platform = new THREE.Group();
         this.scene.add(this.platform);
 
@@ -111,11 +111,16 @@ export class SceneManager {
         const platGeo = new THREE.CylinderGeometry(4.5, 4.8, platformHeight, 64);
         const platMat = new THREE.MeshStandardMaterial({ color: 0x111111, metalness: 0.8, roughness: 0.2 });
         const platformMesh = new THREE.Mesh(platGeo, platMat);
-        platformMesh.position.y = platformHeight / 2;
+        
+        // Position the mesh so its TOP is at exactly platformHeight
+        platformMesh.position.y = platformHeight / 2; 
         platformMesh.receiveShadow = true;
-        this.floorGroup.add(platformMesh);
+        
+        // Add visual platform to floorGroup (static) or platform (if it rotates)
+        // If the car rotates with the platform, add platformMesh to this.platform
+        this.platform.add(platformMesh); 
 
-        this.platformTopY = platformHeight;
+        this.platformTopY = platformHeight; // This is 0.2
 
         const ring = new THREE.Mesh(
             new THREE.TorusGeometry(4.8, 0.05, 16, 100),
@@ -125,6 +130,7 @@ export class SceneManager {
         ring.position.y = 0.15;
         this.floorGroup.add(ring);
     }
+
 
     setupParticles() {
         const count = 300;
@@ -144,19 +150,18 @@ export class SceneManager {
         return new Promise((resolve, reject) => {
             if (!modelPath) {
                 this.createPlaceholderCar();
-
-                let p = 0;
-                const i = setInterval(() => {
-                    p += 0.1;
-                    if (onProgress) onProgress(p);
-                    if (p >= 1) { clearInterval(i); resolve(); }
-                }, 50);
+                resolve();
                 return;
             }
 
             const loader = new GLTFLoader();
             loader.load(modelPath, (gltf) => {
                 this.car = gltf.scene;
+
+                // 1. Reset transforms before measuring
+                this.car.position.set(0, 0, 0);
+                this.car.rotation.set(0, Math.PI, 0); // Face forward
+                this.car.scale.setScalar(1);
 
                 this.car.traverse((node) => {
                     if (node.isMesh) {
@@ -166,35 +171,25 @@ export class SceneManager {
                     }
                 });
 
-                this.car.rotation.y = Math.PI;
-
-                // Step 1: Reset position to origin before any calculations
-                this.car.position.set(0, 0, 0);
-
-                // Step 2: Get initial bounding box to determine size
+                // 2. Measure the car
                 const box = new THREE.Box3().setFromObject(this.car);
                 const size = box.getSize(new THREE.Vector3());
-
-                // Step 3: Scale to fit platform
-                const scaleFactor = 4.8 / Math.max(size.x, size.z);
-                this.car.scale.setScalar(scaleFactor);
-
-                // Step 4: Recalculate bounding box AFTER scaling
-                box.setFromObject(this.car);
                 const center = box.getCenter(new THREE.Vector3());
 
-                // Step 5: Center horizontally (X and Z)
+                // 3. Scale the car to fit (optional, but keeps consistency)
+                const scaleFactor = 4.5 / Math.max(size.x, size.z);
+                this.car.scale.setScalar(scaleFactor);
+
+                // 4. Re-measure after scaling to get accurate dimensions
+                box.setFromObject(this.car);
+                const newMin = box.min.y;
+
+                // 5. Ground the car
+                // We move the car so that its bottom (newMin) is at platformTopY (0.2)
+                // We also center it on X and Z
                 this.car.position.x = -center.x;
                 this.car.position.z = -center.z;
-
-                // Step 6: Recalculate bounding box AFTER repositioning X/Z
-                // This is critical because moving the car changes the bounding box
-                box.setFromObject(this.car);
-
-                // Step 7: Ground the car on the platform
-                // box.min.y is now the world-space bottom of the car (bottom of tires)
-                // We want that bottom to sit exactly at platformTopY (0.2)
-                this.car.position.y = this.platformTopY - box.min.y;
+                this.car.position.y = (this.platformTopY - newMin);
 
                 this.platform.add(this.car);
                 resolve(this.car);
