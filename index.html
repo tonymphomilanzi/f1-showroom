@@ -1,0 +1,263 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>F1 Showroom Experience</title>
+    <link rel="stylesheet" href="css/styles.css">
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;700;900&family=Rajdhani:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+    <!-- Preloader -->
+    <div id="preloader">
+        <div class="loader-content">
+            <div class="f1-logo">
+                <svg viewBox="0 0 100 50" class="logo-svg">
+                    <text x="10" y="40" class="logo-text">F1</text>
+                </svg>
+            </div>
+            <div class="loading-bar-container">
+                <div class="loading-bar"></div>
+            </div>
+            <p class="loading-text">Loading Experience...</p>
+            <p class="loading-percent">0%</p>
+        </div>
+        <div class="speed-lines">
+            <div class="speed-line"></div>
+            <div class="speed-line"></div>
+            <div class="speed-line"></div>
+            <div class="speed-line"></div>
+            <div class="speed-line"></div>
+        </div>
+    </div>
+
+    <!-- Opening Curtain -->
+    <div id="curtain">
+        <div class="curtain-left"></div>
+        <div class="curtain-right"></div>
+    </div>
+
+    <!-- Main Container -->
+    <div id="app">
+        <!-- Three.js Canvas Container -->
+        <div id="canvas-container"></div>
+
+        <!-- Header -->
+        <header id="header">
+            <div class="logo">
+                <span class="logo-f">F</span>
+                <span class="logo-1">1</span>
+                <span class="logo-text-small">SHOWROOM</span>
+            </div>
+            <nav class="nav-menu">
+                <a href="#" class="nav-link active" data-view="showroom">Showroom</a>
+                <a href="#" class="nav-link" data-view="drive">Test Drive</a>
+                <a href="#" class="nav-link" data-view="specs">Specifications</a>
+                <a href="#" class="nav-link" data-view="customize">Customize</a>
+            </nav>
+            <div class="header-actions">
+                <button class="btn-sound" id="soundToggle">
+                    <span class="sound-icon">🔊</span>
+                </button>
+                <button class="btn-fullscreen" id="fullscreenToggle">
+                    <span class="fullscreen-icon">⛶</span>
+                </button>
+            </div>
+        </header>
+
+        <!-- Car Info Panel -->
+        <div id="info-panel" class="panel">
+            <div class="panel-header">
+                <h2>2024 FORMULA 1</h2>
+                <div class="team-badge">RACING TEAM</div>
+            </div>
+            <div class="panel-content">
+                <div class="stat-grid">
+                    <div class="stat-item">
+                        <span class="stat-value" data-value="950">0</span>
+                        <span class="stat-label">HORSEPOWER</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-value" data-value="372">0</span>
+                        <span class="stat-label">TOP SPEED (KM/H)</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-value" data-value="2.6">0</span>
+                        <span class="stat-label">0-100 KM/H (S)</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-value" data-value="798">0</span>
+                        <span class="stat-label">WEIGHT (KG)</span>
+                    </div>
+                </div>
+            </div>
+            <button class="btn-explore" id="exploreBtn">
+                <span>EXPLORE CAR</span>
+                <svg class="arrow-icon" viewBox="0 0 24 24">
+                    <path d="M5 12h14M12 5l7 7-7 7"/>
+                </svg>
+            </button>
+        </div>
+
+        <!-- Controls Panel (Driving Mode) -->
+        <div id="controls-panel" class="panel hidden">
+            <div class="controls-header">
+                <h3>DRIVING CONTROLS</h3>
+            </div>
+            <div class="controls-content">
+                <div class="control-keys">
+                    <div class="key-row">
+                        <div class="key" data-key="W">W</div>
+                    </div>
+                    <div class="key-row">
+                        <div class="key" data-key="A">A</div>
+                        <div class="key" data-key="S">S</div>
+                        <div class="key" data-key="D">D</div>
+                    </div>
+                </div>
+                <div class="control-info">
+                    <p><strong>W</strong> - Accelerate</p>
+                    <p><strong>S</strong> - Brake/Reverse</p>
+                    <p><strong>A/D</strong> - Steer</p>
+                    <p><strong>SPACE</strong> - Handbrake</p>
+                    <p><strong>SHIFT</strong> - Boost</p>
+                    <p><strong>C</strong> - Change Camera</p>
+                </div>
+            </div>
+            <div class="speedometer">
+                <div class="speed-display">
+                    <span class="current-speed" id="currentSpeed">0</span>
+                    <span class="speed-unit">KM/H</span>
+                </div>
+                <div class="rpm-bar">
+                    <div class="rpm-fill" id="rpmFill"></div>
+                </div>
+                <div class="gear-display">
+                    <span class="gear-label">GEAR</span>
+                    <span class="current-gear" id="currentGear">N</span>
+                </div>
+            </div>
+            <button class="btn-back" id="backToShowroom">
+                ← BACK TO SHOWROOM
+            </button>
+        </div>
+
+        <!-- Customization Panel -->
+        <div id="customize-panel" class="panel hidden">
+            <div class="customize-header">
+                <h3>CUSTOMIZE YOUR CAR</h3>
+            </div>
+            <div class="customize-content">
+                <div class="color-section">
+                    <h4>Body Color</h4>
+                    <div class="color-palette">
+                        <button class="color-btn active" data-color="#ff0000" style="background: #ff0000;"></button>
+                        <button class="color-btn" data-color="#0066ff" style="background: #0066ff;"></button>
+                        <button class="color-btn" data-color="#00ff00" style="background: #00ff00;"></button>
+                        <button class="color-btn" data-color="#ffff00" style="background: #ffff00;"></button>
+                        <button class="color-btn" data-color="#ff6600" style="background: #ff6600;"></button>
+                        <button class="color-btn" data-color="#ffffff" style="background: #ffffff;"></button>
+                        <button class="color-btn" data-color="#000000" style="background: #000000;"></button>
+                        <button class="color-btn" data-color="#ff00ff" style="background: #ff00ff;"></button>
+                    </div>
+                </div>
+                <div class="material-section">
+                    <h4>Finish</h4>
+                    <div class="material-options">
+                        <button class="material-btn active" data-material="glossy">Glossy</button>
+                        <button class="material-btn" data-material="matte">Matte</button>
+                        <button class="material-btn" data-material="metallic">Metallic</button>
+                    </div>
+                </div>
+                <div class="rim-section">
+                    <h4>Rim Style</h4>
+                    <div class="rim-options">
+                        <button class="rim-btn active" data-rim="sport">Sport</button>
+                        <button class="rim-btn" data-rim="racing">Racing</button>
+                        <button class="rim-btn" data-rim="classic">Classic</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Specs Panel -->
+        <div id="specs-panel" class="panel hidden">
+            <div class="specs-header">
+                <h3>TECHNICAL SPECIFICATIONS</h3>
+            </div>
+            <div class="specs-content">
+                <div class="specs-category">
+                    <h4>ENGINE</h4>
+                    <ul>
+                        <li><span>Type</span><span>1.6L V6 Turbo Hybrid</span></li>
+                        <li><span>Power</span><span>950+ HP</span></li>
+                        <li><span>RPM</span><span>15,000 Max</span></li>
+                        <li><span>ERS</span><span>160 HP Additional</span></li>
+                    </ul>
+                </div>
+                <div class="specs-category">
+                    <h4>CHASSIS</h4>
+                    <ul>
+                        <li><span>Material</span><span>Carbon Fiber Monocoque</span></li>
+                        <li><span>Weight</span><span>798 kg (minimum)</span></li>
+                        <li><span>Length</span><span>5,500 mm</span></li>
+                        <li><span>Width</span><span>2,000 mm</span></li>
+                    </ul>
+                </div>
+                <div class="specs-category">
+                    <h4>PERFORMANCE</h4>
+                    <ul>
+                        <li><span>Top Speed</span><span>372 km/h</span></li>
+                        <li><span>0-100 km/h</span><span>2.6 seconds</span></li>
+                        <li><span>0-200 km/h</span><span>4.6 seconds</span></li>
+                        <li><span>G-Force</span><span>6G (cornering)</span></li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <!-- Camera Controls -->
+        <div id="camera-controls">
+            <button class="cam-btn active" data-cam="front">Front</button>
+            <button class="cam-btn" data-cam="side">Side</button>
+            <button class="cam-btn" data-cam="rear">Rear</button>
+            <button class="cam-btn" data-cam="top">Top</button>
+            <button class="cam-btn" data-cam="cockpit">Cockpit</button>
+            <button class="cam-btn" data-cam="orbit">360°</button>
+        </div>
+
+        <!-- Mini Map (Driving Mode) -->
+        <div id="mini-map" class="hidden">
+            <canvas id="mapCanvas"></canvas>
+            <div class="car-indicator"></div>
+        </div>
+
+        <!-- Notification -->
+        <div id="notification" class="notification hidden">
+            <span class="notification-text"></span>
+        </div>
+
+        <!-- Footer -->
+        <footer id="footer">
+            <div class="footer-left">
+                <span>© 2024 F1 SHOWROOM EXPERIENCE</span>
+            </div>
+            <div class="footer-center">
+                <span class="instruction">Use mouse to orbit • Scroll to zoom</span>
+            </div>
+            <div class="footer-right">
+                <span class="fps-counter">FPS: <span id="fpsValue">60</span></span>
+            </div>
+        </footer>
+    </div>
+
+    <!-- Scripts -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/GLTFLoader.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/DRACOLoader.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/ScrollTrigger.min.js"></script>
+    <script type="module" src="js/main.js"></script>
+</body>
+</html>
