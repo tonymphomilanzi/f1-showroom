@@ -3,109 +3,187 @@ import { gsap } from 'gsap';
 export class UIManager {
     constructor(app) {
         this.app = app;
-        this.interactionEnabled = false;
         
-        // FPS Calculation
+        // 1. DOM Cache (Crucial for performance)
+        this.elements = {
+            speed: document.getElementById('currentSpeed'),
+            gear: document.getElementById('currentGear'),
+            rpmFill: document.getElementById('rpmFill'),
+            fps: document.getElementById('fpsValue'),
+            notification: document.getElementById('notification'),
+            notifText: document.querySelector('.notification-text'),
+            loadingBar: document.querySelector('.loading-bar'),
+            loadingText: document.querySelector('.loading-text'),
+            loadingPercent: document.querySelector('.loading-percent'),
+            mapCanvas: document.getElementById('mapCanvas')
+        };
+
+        // 2. State
+        this.lastGear = null;
         this.fpsHistory = [];
         this.lastFrameTime = performance.now();
-        
-        // Check for mobile state for animations
         this.isMobile = window.innerWidth <= 768;
+
+        this.init();
+    }
+
+    init() {
         window.addEventListener('resize', () => {
             this.isMobile = window.innerWidth <= 768;
+            this._resizeCanvas();
         });
+        this._resizeCanvas();
     }
 
-    enableInteraction() {
-        this.interactionEnabled = true;
-        document.body.style.cursor = 'default';
-    }
+    /**
+     * Dashboard: Updates Speed, Gear, and RPM bar
+     */
+    syncDashboard(carControls) {
+        if (!carControls) return;
 
-    disableInteraction() {
-        this.interactionEnabled = false;
-        document.body.style.cursor = 'wait';
-    }
-
-    showNotification(message, duration = 3000) {
-        const notification = document.getElementById('notification');
-        if (!notification) return;
-        
-        const text = notification.querySelector('.notification-text');
-        if (text) text.textContent = message;
-
-        notification.classList.remove('hidden');
-
-        // Kill existing tweens to prevent conflict
-        gsap.killTweensOf(notification);
-
-        // Animate in (Fade + Slide Down)
-        gsap.fromTo(notification,
-            { opacity: 0, y: -20 },
-            { opacity: 1, y: 0, duration: 0.4, ease: 'back.out(1.7)' }
-        );
-
-        // Auto hide
-        gsap.to(notification, {
-            delay: duration / 1000,
-            opacity: 0,
-            y: -10,
-            duration: 0.4,
-            ease: 'power2.in',
-            onComplete: () => {
-                notification.classList.add('hidden');
-            }
-        });
-    }
-
-    updateSpeedometer(speed, rpm, gear) {
-        const speedElement = document.getElementById('currentSpeed');
-        const rpmFill = document.getElementById('rpmFill');
-        const gearElement = document.getElementById('currentGear');
-
-        if (speedElement) {
-            speedElement.textContent = Math.abs(Math.round(speed));
+        // Speed
+        if (this.elements.speed) {
+            this.elements.speed.textContent = carControls.getDisplaySpeed();
         }
 
-        if (rpmFill) {
-            // RPM is usually 0-15000 in F1
-            const rpmPercent = Math.min((rpm / 15000) * 100, 100);
-            rpmFill.style.width = `${rpmPercent}%`;
+        // Gear Logic
+        if (this.elements.gear) {
+            const gearStr = carControls.getGear();
+            if (this.lastGear !== gearStr) {
+                this.elements.gear.textContent = gearStr;
+                this._animateGearChange();
+                this.lastGear = gearStr;
+            }
+        }
 
-            // Dynamic Gradient based on load
-            if (rpmPercent > 90) {
-                rpmFill.style.background = 'linear-gradient(90deg, #00ff00 0%, #ffff00 50%, #ff0000 80%, #ff0000 100%)';
-                rpmFill.style.boxShadow = '0 0 10px #ff0000'; // Add glow at high RPM
-            } else if (rpmPercent > 70) {
-                rpmFill.style.background = 'linear-gradient(90deg, #00ff00 0%, #ffff00 60%, #ff6600 100%)';
-                rpmFill.style.boxShadow = 'none';
+        // RPM Logic
+        if (this.elements.rpmFill) {
+            const rpmPct = (carControls.rpm / 15000) * 100;
+            this.elements.rpmFill.style.width = `${Math.min(rpmPct, 100)}%`;
+            
+            // Dynamic Color Coding
+            if (rpmPct > 92) {
+                this.elements.rpmFill.style.background = '#ff0000'; // Redline
+                this.elements.rpmFill.classList.add('rpm-blink');
+            } else if (rpmPct > 75) {
+                this.elements.rpmFill.style.background = '#ffcc00'; // Shift zone
+                this.elements.rpmFill.classList.remove('rpm-blink');
             } else {
-                rpmFill.style.background = 'linear-gradient(90deg, #00ff00 0%, #ffff00 50%, #ff0000 100%)';
-                rpmFill.style.boxShadow = 'none';
-            }
-        }
-
-        if (gearElement) {
-            let gearString;
-            if (gear === 0) gearString = 'N';
-            else if (gear === -1) gearString = 'R';
-            else gearString = gear.toString();
-            
-            gearElement.textContent = gearString;
-            
-            // Highlight gear change
-            if (this.lastGear !== gear) {
-                gsap.fromTo(gearElement, 
-                    { scale: 1.5, color: '#fff' }, 
-                    { scale: 1, color: '#ffd700', duration: 0.2 }
-                );
-                this.lastGear = gear;
+                this.elements.rpmFill.style.background = '#00ff44'; // Safe zone
+                this.elements.rpmFill.classList.remove('rpm-blink');
             }
         }
     }
 
+    _animateGearChange() {
+        gsap.fromTo(this.elements.gear, 
+            { scale: 1.6, filter: 'brightness(2)' },
+            { scale: 1, filter: 'brightness(1)', duration: 0.3, ease: "back.out(2)" }
+        );
+    }
+
+    /**
+     * Notifications: Premium toast system
+     */
+    showNotification(message, type = 'info') {
+        const el = this.elements.notification;
+        if (!el) return;
+
+        if (this.elements.notifText) this.elements.notifText.textContent = message;
+        
+        el.classList.remove('hidden');
+        gsap.killTweensOf(el);
+
+        const tl = gsap.timeline();
+        tl.fromTo(el, 
+            { y: -50, opacity: 0 },
+            { y: 0, opacity: 1, duration: 0.5, ease: "back.out(1.2)" }
+        );
+        
+        tl.to(el, {
+            y: -20, opacity: 0, duration: 0.4, delay: 2.5,
+            onComplete: () => el.classList.add('hidden')
+        });
+    }
+
+    /**
+     * MiniMap: High-performance canvas drawing
+     */
+    updateMiniMap(carPosition, carRotation) {
+        const canvas = this.elements.mapCanvas;
+        if (!canvas || canvas.offsetParent === null) return;
+
+        const ctx = canvas.getContext('2d');
+        const { width, height } = canvas;
+
+        // 1. Clear with slight trail effect
+        ctx.fillStyle = 'rgba(10, 10, 10, 0.5)';
+        ctx.fillRect(0, 0, width, height);
+
+        // 2. Draw Bounds
+        ctx.strokeStyle = 'rgba(255,255,255,0.1)';
+        ctx.setLineDash([5, 5]);
+        ctx.strokeRect(10, 10, width - 20, height - 20);
+        ctx.setLineDash([]);
+
+        // 3. Map World -> UI Coordinates
+        // Scale car position to fit 200x200 map
+        const mapCenterX = width / 2;
+        const mapCenterY = height / 2;
+        const scale = 2.5; 
+
+        const uiX = mapCenterX + (carPosition.x * scale);
+        const uiY = mapCenterY + (carPosition.z * scale);
+
+        // 4. Draw Player Arrow
+        ctx.save();
+        ctx.translate(uiX, uiY);
+        ctx.rotate(-carRotation); 
+
+        // Arrow shadow/glow
+        ctx.shadowBlur = 10;
+        ctx.shadowColor = '#e10600';
+
+        ctx.fillStyle = '#e10600';
+        ctx.beginPath();
+        ctx.moveTo(0, -10); // Nose
+        ctx.lineTo(-7, 8);  // Left wing
+        ctx.lineTo(0, 4);   // Exhaust
+        ctx.lineTo(7, 8);   // Right wing
+        ctx.closePath();
+        ctx.fill();
+
+        ctx.restore();
+    }
+
+    _resizeCanvas() {
+        const canvas = this.elements.mapCanvas;
+        if (!canvas) return;
+        const rect = canvas.getBoundingClientRect();
+        canvas.width = rect.width;
+        canvas.height = rect.height;
+    }
+
+    /**
+     * Loading System
+     */
+    updateLoader(progress) {
+        const pct = Math.round(progress * 100);
+        if (this.elements.loadingBar) this.elements.loadingBar.style.width = `${pct}%`;
+        if (this.elements.loadingPercent) this.elements.loadingPercent.textContent = `${pct}%`;
+        
+        if (this.elements.loadingText) {
+            if (pct < 40) this.elements.loadingText.textContent = 'Optimizing Aerodynamics...';
+            else if (pct < 80) this.elements.loadingText.textContent = 'Tuning Engine...';
+            else this.elements.loadingText.textContent = 'Ready to Race';
+        }
+    }
+
+    /**
+     * FPS & Performance
+     */
     updateFPS() {
-        const fpsElement = document.getElementById('fpsValue');
-        if (!fpsElement) return;
+        if (!this.elements.fps) return;
 
         const now = performance.now();
         const delta = now - this.lastFrameTime;
@@ -113,171 +191,39 @@ export class UIManager {
 
         const fps = Math.round(1000 / delta);
         this.fpsHistory.push(fps);
+        if (this.fpsHistory.length > 60) this.fpsHistory.shift();
 
-        if (this.fpsHistory.length > 30) { // Reduced sample size for snappier updates
-            this.fpsHistory.shift();
-        }
-
-        const avgFps = Math.round(
-            this.fpsHistory.reduce((a, b) => a + b, 0) / this.fpsHistory.length
-        );
-
-        fpsElement.textContent = avgFps;
-
-        // Color code FPS
-        if (avgFps >= 55) fpsElement.style.color = '#00ff00';
-        else if (avgFps >= 30) fpsElement.style.color = '#ffff00';
-        else fpsElement.style.color = '#ff0000';
-    }
-
-    updateMiniMap(carPosition, carRotation) {
-        const mapCanvas = document.getElementById('mapCanvas');
-        if (!mapCanvas || mapCanvas.offsetParent === null) return; // Don't draw if hidden
-
-        const ctx = mapCanvas.getContext('2d');
+        const avg = Math.round(this.fpsHistory.reduce((a, b) => a + b) / this.fpsHistory.length);
         
-        // Match canvas internal resolution to CSS display size for sharpness
-        const rect = mapCanvas.getBoundingClientRect();
-        mapCanvas.width = rect.width;
-        mapCanvas.height = rect.height;
-
-        const width = mapCanvas.width;
-        const height = mapCanvas.height;
-
-        // Clear canvas
-        ctx.fillStyle = 'rgba(20, 20, 20, 0.9)';
-        ctx.fillRect(0, 0, width, height);
-
-        // Draw track outline (Simple circle for demo, represents bounds)
-        ctx.strokeStyle = '#444';
-        ctx.lineWidth = 2;
-        ctx.beginPath();
-        // Dynamic radius based on canvas size
-        const radius = Math.min(width, height) / 2 - 20;
-        ctx.arc(width / 2, height / 2, radius, 0, Math.PI * 2);
-        ctx.stroke();
-
-        // Calculate Car Position (Mock scaling for demo)
-        // In a real app, you'd map world coordinates to map coordinates
-        const mapScale = 4; 
-        const carX = width / 2 + carPosition.x * mapScale;
-        const carY = height / 2 - carPosition.z * mapScale;
-
-        // Draw Car Arrow
-        ctx.save();
-        ctx.translate(carX, carY);
-        ctx.rotate(-carRotation); // Rotate arrow to match car heading
-
-        ctx.fillStyle = '#e10600';
-        ctx.beginPath();
-        ctx.moveTo(0, -8);
-        ctx.lineTo(-5, 6);
-        ctx.lineTo(0, 4); // Indent at bottom
-        ctx.lineTo(5, 6);
-        ctx.closePath();
-        ctx.fill();
-
-        ctx.restore();
-    }
-
-    highlightControl(key) {
-        if (!key) return;
-        // Escape special characters if necessary, though single letters are fine
-        const keyElement = document.querySelector(`.key[data-key="${key.toUpperCase()}"]`);
-        if (keyElement) {
-            keyElement.classList.add('active');
-            gsap.to(keyElement, { scale: 0.9, duration: 0.1 });
-        }
-    }
-
-    unhighlightControl(key) {
-        if (!key) return;
-        const keyElement = document.querySelector(`.key[data-key="${key.toUpperCase()}"]`);
-        if (keyElement) {
-            keyElement.classList.remove('active');
-            gsap.to(keyElement, { scale: 1, duration: 0.1 });
-        }
-    }
-
-    updateProgress(percent, message = '') {
-        const loadingBar = document.querySelector('.loading-bar');
-        const loadingText = document.querySelector('.loading-text');
-        const loadingPercent = document.querySelector('.loading-percent');
-
-        if (loadingBar) loadingBar.style.width = `${percent}%`;
-        if (loadingText && message) loadingText.textContent = message;
-        if (loadingPercent) loadingPercent.textContent = `${Math.round(percent)}%`;
+        this.elements.fps.textContent = avg;
+        this.elements.fps.style.color = avg > 50 ? '#00ff44' : (avg > 30 ? '#ffcc00' : '#ff4444');
     }
 
     /**
-     * Logic to toggle panels.
-     * Updated to handle Mobile Bottom Sheets vs Desktop Side Panels
+     * Keyboard Visual Feedback
      */
-    togglePanel(panelId, show) {
-        const panel = document.getElementById(panelId);
-        if (!panel) return;
+    toggleKeyVisual(key, isActive) {
+        const k = key.toLowerCase() === ' ' ? 'space' : key.toLowerCase();
+        const el = document.querySelector(`.key-hint[data-key="${k}"]`);
+        if (!el) return;
 
-        // Reset any running animations on this element
-        gsap.killTweensOf(panel);
-
-        if (show) {
-            panel.classList.remove('hidden');
-            
-            // Animation configuration based on device
-            const initialVars = this.isMobile 
-                ? { y: '100%', x: 0, opacity: 0 }  // Slide up from bottom on mobile
-                : { x: 50, y: 0, opacity: 0 };     // Slide left from side on desktop
-
-            const targetVars = { 
-                opacity: 1, 
-                x: 0, 
-                y: 0, 
-                duration: 0.5, 
-                ease: 'power3.out' 
-            };
-
-            gsap.fromTo(panel, initialVars, targetVars);
+        if (isActive) {
+            el.classList.add('active');
+            gsap.to(el, { scale: 0.9, duration: 0.1 });
         } else {
-            // Exit animation
-            const exitVars = this.isMobile
-                ? { y: '100%', opacity: 0 }
-                : { x: 50, opacity: 0 };
-
-            gsap.to(panel, {
-                ...exitVars,
-                duration: 0.3,
-                ease: 'power2.in',
-                onComplete: () => {
-                    panel.classList.add('hidden');
-                }
-            });
+            el.classList.remove('active');
+            gsap.to(el, { scale: 1, duration: 0.1 });
         }
     }
 
-    /**
-     * Setups up listeners for existing Color/Rim/Material buttons in the DOM
-     */
-    setupOptionSelectors(selectorClass, onSelect) {
-        const buttons = document.querySelectorAll(selectorClass);
-        buttons.forEach(btn => {
-            btn.addEventListener('click', (e) => {
-                // UI Update
-                buttons.forEach(b => b.classList.remove('active'));
-                
-                // Handle button click or svg click bubbling
-                const targetBtn = e.target.closest('button');
-                if(targetBtn) targetBtn.classList.add('active');
-
-                // Logic Callback
-                // Determine what data attribute to pass back based on class
-                if (selectorClass.includes('color')) {
-                    onSelect(targetBtn.dataset.color);
-                } else if (selectorClass.includes('material')) {
-                    onSelect(targetBtn.dataset.material);
-                } else if (selectorClass.includes('rim')) {
-                    onSelect(targetBtn.dataset.rim);
-                }
-            });
+    updateActiveNav(viewName) {
+        document.querySelectorAll('.nav-link').forEach(link => {
+            link.classList.toggle('active', link.dataset.action === 'switch-view' && link.dataset.value === viewName);
         });
+    }
+
+    enableInteraction() {
+        document.body.classList.remove('loading');
+        this.showNotification('System Online - Welcome, Pilot');
     }
 }

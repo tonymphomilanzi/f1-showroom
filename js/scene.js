@@ -146,58 +146,67 @@ setupShowroom() {
         this.scene.add(this.particles);
     }
 
-    async loadCarModel(modelPath, onProgress) {
-        return new Promise((resolve, reject) => {
-            if (!modelPath) {
-                this.createPlaceholderCar();
-                resolve();
-                return;
-            }
+   // scene.js - Replace your loadCarModel with this refined version
+async loadCarModel(modelPath, onProgress) {
+    return new Promise((resolve, reject) => {
+        if (!modelPath) {
+            this.createPlaceholderCar();
+            resolve();
+            return;
+        }
 
-            const loader = new GLTFLoader();
-            loader.load(modelPath, (gltf) => {
-                this.car = gltf.scene;
+        const loader = new GLTFLoader();
+        loader.load(modelPath, (gltf) => {
+            this.car = gltf.scene;
 
-                // 1. Reset transforms before measuring
-                this.car.position.set(0, 0, 0);
-                this.car.rotation.set(0, Math.PI, 0); // Face forward
-                this.car.scale.setScalar(1);
-
-                this.car.traverse((node) => {
-                    if (node.isMesh) {
-                        node.castShadow = true;
-                        node.receiveShadow = true;
-                        if (node.material) node.material.envMapIntensity = 1.0;
+            // 1. Pre-process: Find and hide "shadow" or "ground" planes 
+            // that come with many GLTF models. These cause the 'floating' feel.
+            this.car.traverse((node) => {
+                if (node.isMesh) {
+                    const name = node.name.toLowerCase();
+                    if (name.includes('shadow') || name.includes('plane') || name.includes('ground')) {
+                        node.visible = false; 
                     }
-                });
+                    node.castShadow = true;
+                    node.receiveShadow = true;
+                }
+            });
 
-                // 2. Measure the car
-                const box = new THREE.Box3().setFromObject(this.car);
-                const size = box.getSize(new THREE.Vector3());
-                const center = box.getCenter(new THREE.Vector3());
+            // 2. Reset transforms for measurement
+            this.car.position.set(0, 0, 0);
+            this.car.rotation.set(0, Math.PI, 0); 
+            this.car.scale.setScalar(1);
+            this.car.updateMatrixWorld(true);
 
-                // 3. Scale the car to fit (optional, but keeps consistency)
-                const scaleFactor = 4.5 / Math.max(size.x, size.z);
-                this.car.scale.setScalar(scaleFactor);
+            // 3. Compute Bounding Box accurately
+            const box = new THREE.Box3().setFromObject(this.car);
+            const size = box.getSize(new THREE.Vector3());
+            const center = box.getCenter(new THREE.Vector3());
 
-                // 4. Re-measure after scaling to get accurate dimensions
-                box.setFromObject(this.car);
-                const newMin = box.min.y;
+            // 4. Scale to fit platform (e.g., max 4 units wide/long)
+            const maxDim = Math.max(size.x, size.z);
+            const scaleFactor = 4.0 / maxDim;
+            this.car.scale.setScalar(scaleFactor);
 
-                // 5. Ground the car
-                // We move the car so that its bottom (newMin) is at platformTopY (0.2)
-                // We also center it on X and Z
-                this.car.position.x = -center.x;
-                this.car.position.z = -center.z;
-                this.car.position.y = (this.platformTopY - newMin);
+            // 5. Grounding Logic:
+            // Re-calculate box after scaling
+            box.setFromObject(this.car);
+            
+            // This is the vertical distance from the center to the bottom of the tires
+            const bottomY = box.min.y; 
 
-                this.platform.add(this.car);
-                resolve(this.car);
-            },
-            (xhr) => { if (xhr.lengthComputable && onProgress) onProgress(xhr.loaded / xhr.total); },
-            (err) => reject(err));
-        });
-    }
+            // Position: Center X/Z, and set Y so bottom sits exactly on platformTopY
+            this.car.position.x = -center.x * scaleFactor;
+            this.car.position.z = -center.z * scaleFactor;
+            this.car.position.y = this.platformTopY - bottomY;
+
+            this.platform.add(this.car);
+            resolve(this.car);
+        }, 
+        (xhr) => onProgress?.(xhr.loaded / xhr.total),
+        (err) => reject(err));
+    });
+}
 
     createPlaceholderCar() {
         this.car = new THREE.Group();

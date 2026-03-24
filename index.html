@@ -2,10 +2,14 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>F1 Showroom Experience</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>F1 Showroom Experience | 2026 Edition</title>
+    
+    <!-- Design tokens & Styles -->
     <link rel="stylesheet" href="css/styles.css">
-    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;700;900&family=Rajdhani:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Rajdhani:wght@300;500;700&display=swap" rel="stylesheet">
+    
+    <!-- Library Import Map -->
     <script type="importmap">
     {
         "imports": {
@@ -16,264 +20,198 @@
     }
     </script>
 </head>
-<body>
-    <!-- Preloader (Keep existing) -->
+<body class="loading">
+
+    <!-- 1. PRELOADER (Starting Grid) -->
     <div id="preloader">
         <div class="loader-content">
-            <div class="f1-logo">
-                <svg viewBox="0 0 100 50" class="logo-svg">
-                    <text x="10" y="40" class="logo-text">F1</text>
-                </svg>
+            <div class="f1-logo-wrap">
+                <span class="logo-f">F</span><span class="logo-1">1</span>
             </div>
-            <div class="loading-bar-container">
+            <div class="loading-bar-wrap">
                 <div class="loading-bar"></div>
             </div>
-            <p class="loading-text">Loading Experience...</p>
+            <p class="loading-text">Optimizing Aerodynamics...</p>
             <p class="loading-percent">0%</p>
         </div>
         <div class="speed-lines">
             <div class="speed-line"></div>
             <div class="speed-line"></div>
             <div class="speed-line"></div>
-            <div class="speed-line"></div>
-            <div class="speed-line"></div>
         </div>
     </div>
 
-    <!-- Opening Curtain -->
+    <!-- 2. OPENING CURTAIN -->
     <div id="curtain">
         <div class="curtain-left"></div>
         <div class="curtain-right"></div>
     </div>
 
-    <!-- Main Container -->
+    <!-- 3. MAIN APP -->
     <div id="app">
-        <!-- Three.js Canvas Container -->
+        <!-- Three.js Canvas -->
         <div id="canvas-container"></div>
 
-        <!-- Header -->
+        <!-- HEADER (Telemetry Bar) -->
         <header id="header">
-            <div class="logo">
-                <span class="logo-f">F</span>
-                <span class="logo-1">1</span>
-                <span class="logo-text-small">SHOWROOM</span>
+            <div class="logo-wrap">
+                <div class="logo-box">F1</div>
+                <span class="logo-text-small">ULTIMATE SHOWROOM</span>
             </div>
             
-            <!-- Desktop Nav -->
             <nav class="nav-menu">
-                <a href="#" class="nav-link active" data-view="showroom">Showroom</a>
-                <a href="#" class="nav-link" data-view="drive">Test Drive</a>
-                <a href="#" class="nav-link" data-view="specs">Specifications</a>
-                <a href="#" class="nav-link" data-view="customize">Customize</a>
+                <a href="#" class="nav-link active" data-action="switch-view" data-value="showroom">Showroom</a>
+                <a href="#" class="nav-link" data-action="switch-view" data-value="drive">Test Drive</a>
+                <a href="#" class="nav-link" data-action="switch-view" data-value="specs">Specs</a>
+                <a href="#" class="nav-link" data-action="switch-view" data-value="customize">Customize</a>
             </nav>
 
             <div class="header-actions">
-                <button class="btn-sound" id="soundToggle" aria-label="Toggle Sound">
-                    <!-- SVG Sound Icon -->
-                    <svg class="icon-svg" viewBox="0 0 24 24">
-                        <path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z"/>
-                    </svg>
+                <button class="btn-sound" id="soundToggle" title="Toggle Audio">
+                    <svg class="icon-svg" viewBox="0 0 24 24"><path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02z"/></svg>
                 </button>
-                <button class="btn-fullscreen" id="fullscreenToggle" aria-label="Toggle Fullscreen">
-                    <!-- SVG Fullscreen Icon -->
-                    <svg class="icon-svg" viewBox="0 0 24 24">
-                        <path d="M7 14H5v5h5v-2H7v-3zm-2-4h2V7h3V5H5v5zm12 7h-3v2h5v-5h-2v3zM14 5v2h3v3h2V5h-5z"/>
-                    </svg>
+                <button class="btn-fullscreen" id="fullscreenToggle" title="Toggle Fullscreen">
+                    <svg class="icon-svg" viewBox="0 0 24 24"><path d="M7 14H5v5h5v-2H7v-3zm-2-4h2V7h3V5H5v5zm12 7h-3v2h5v-5h-2v3z"/></svg>
                 </button>
             </div>
         </header>
 
-        <!-- Car Info Panel -->
-        <div id="info-panel" class="panel">
-            <div class="panel-header">
-                <div>
-                    <h2>2026 FORMULA 1</h2>
-                    <!-- Fixed badge display -->
-                    <div class="team-badge">RACING TEAM</div>
+        <!-- INFO PANEL (Left Side) -->
+        <div id="info-panel" class="ui-panel hidden">
+            <h2 class="panel-title">F175 CHASSIS</h2>
+            <p class="panel-subtitle">2026 Prototype Series</p>
+            
+            <div class="stats-grid">
+                <div class="stat-box">
+                    <span class="stat-val stat-value" data-value="950">0</span>
+                    <span class="stat-lab">BHP</span>
+                </div>
+                <div class="stat-box">
+                    <span class="stat-val stat-value" data-value="372">0</span>
+                    <span class="stat-lab">Top KM/H</span>
+                </div>
+                <div class="stat-box">
+                    <span class="stat-val stat-value" data-value="2">0</span>
+                    <span class="stat-lab">0-100 (S)</span>
+                </div>
+                <div class="stat-box">
+                    <span class="stat-val stat-value" data-value="798">0</span>
+                    <span class="stat-lab">Weight KG</span>
                 </div>
             </div>
-            <div class="panel-content">
-                <div class="stat-grid">
-                    <div class="stat-item">
-                        <span class="stat-value" data-value="950">0</span>
-                        <span class="stat-label">HP</span>
-                    </div>
-                    <div class="stat-item">
-                        <span class="stat-value" data-value="372">0</span>
-                        <span class="stat-label">KM/H</span>
-                    </div>
-                    <div class="stat-item">
-                        <span class="stat-value" data-value="2.6">0</span>
-                        <span class="stat-label">0-100</span>
-                    </div>
-                    <div class="stat-item">
-                        <span class="stat-value" data-value="798">0</span>
-                        <span class="stat-label">KG</span>
-                    </div>
-                </div>
-            </div>
-            <button class="btn-explore" id="exploreBtn">
-                <span>EXPLORE CAR</span>
-                <svg class="arrow-icon" viewBox="0 0 24 24">
-                    <path d="M5 12h14M12 5l7 7-7 7"/>
-                </svg>
+
+            <button class="btn-primary" data-action="switch-view" data-value="drive">
+                START TEST DRIVE
             </button>
         </div>
 
-        <!-- Controls Panel -->
-        <div id="controls-panel" class="panel hidden">
-            <div class="controls-header">
-                <h3>DRIVING CONTROLS</h3>
+        <!-- DASHBOARD PANEL (Right Side / Speedo) -->
+        <div id="controls-panel" class="ui-panel hidden">
+            <div class="dash-display">
+                <div class="speed-num" id="currentSpeed">000</div>
+                <div class="stat-lab">KM/H</div>
+                
+                <div class="rpm-container">
+                    <div class="rpm-bar" id="rpmFill"></div>
+                </div>
+                
+                <div class="gear-indicator" id="currentGear">N</div>
             </div>
-            <div class="controls-content">
-                <!-- Hide Keyboard controls on Mobile via CSS if desired, or keep for reference -->
-                <div class="control-keys">
-                    <div class="key-row">
-                        <div class="key" data-key="W">W</div>
-                    </div>
-                    <div class="key-row">
-                        <div class="key" data-key="A">A</div>
-                        <div class="key" data-key="S">S</div>
-                        <div class="key" data-key="D">D</div>
-                    </div>
-                </div>
+            
+            <div class="key-hints-wrap" style="margin-top: 20px; display: flex; justify-content: center; gap: 5px;">
+                <div class="key-hint" data-key="w">W</div>
+                <div class="key-hint" data-key="a">A</div>
+                <div class="key-hint" data-key="s">S</div>
+                <div class="key-hint" data-key="d">D</div>
+                <div class="key-hint" data-key="space" style="width: 80px;">SPACE</div>
             </div>
-            <div class="speedometer">
-                <div class="speed-display">
-                    <span class="current-speed" id="currentSpeed">0</span>
-                    <span class="speed-unit">KM/H</span>
-                </div>
-                <div class="rpm-bar">
-                    <div class="rpm-fill" id="rpmFill"></div>
-                </div>
-                <div class="gear-display">
-                    <span class="gear-label">GEAR</span>
-                    <span class="current-gear" id="currentGear">N</span>
-                </div>
-            </div>
-            <button class="btn-back" id="backToShowroom">
-                <svg class="icon-svg" style="width:12px; height:12px; margin-right:5px; display:inline-block;" viewBox="0 0 24 24">
-                    <path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z"/>
-                </svg>
-                BACK TO SHOWROOM
+
+            <button class="btn-primary" data-action="switch-view" data-value="showroom" style="margin-top: 20px; background: transparent; border: 1px solid #444;">
+                EXIT TO SHOWROOM
             </button>
         </div>
 
-        <!-- Customization Panel -->
-        <div id="customize-panel" class="panel hidden">
-            <div class="customize-header">
-                <h3>CUSTOMIZE</h3>
+        <!-- CUSTOMIZE PANEL -->
+        <div id="customize-panel" class="ui-panel hidden">
+            <h3 class="panel-title" style="font-size: 16px;">LIVERY & FINISH</h3>
+            
+            <div class="customize-section">
+                <p class="stat-lab" style="margin: 15px 0 10px;">Body Paint</p>
+                <div class="color-palette">
+                    <button class="color-btn active" data-action="color" data-value="#e10600" style="background: #e10600;">
+                        <svg class="check-icon" viewBox="0 0 24 24"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg>
+                    </button>
+                    <button class="color-btn" data-action="color" data-value="#1a1a1a" style="background: #1a1a1a;">
+                        <svg class="check-icon" viewBox="0 0 24 24"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg>
+                    </button>
+                    <button class="color-btn" data-action="color" data-value="#0055ff" style="background: #0055ff;">
+                        <svg class="check-icon" viewBox="0 0 24 24"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg>
+                    </button>
+                    <button class="color-btn" data-action="color" data-value="#ffffff" style="background: #ffffff;">
+                        <svg class="check-icon" style="fill:#000" viewBox="0 0 24 24"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg>
+                    </button>
+                </div>
             </div>
-            <div class="customize-content">
-                <div class="color-section">
-                    <h4>Body Color</h4>
-                    <div class="color-palette">
-                        <!-- Added SVG Checkmarks inside buttons -->
-                        <button class="color-btn active" data-color="#ff0000" style="background: #ff0000;">
-                            <svg class="check-icon" viewBox="0 0 24 24"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg>
-                        </button>
-                        <button class="color-btn" data-color="#0066ff" style="background: #0066ff;">
-                            <svg class="check-icon" viewBox="0 0 24 24"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg>
-                        </button>
-                        <button class="color-btn" data-color="#00ff00" style="background: #00ff00;">
-                            <svg class="check-icon" viewBox="0 0 24 24"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg>
-                        </button>
-                        <button class="color-btn" data-color="#ffff00" style="background: #ffff00;">
-                            <svg class="check-icon" viewBox="0 0 24 24"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg>
-                        </button>
-                        <button class="color-btn" data-color="#ffffff" style="background: #ffffff;">
-                             <svg class="check-icon" style="fill: #000;" viewBox="0 0 24 24"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg>
-                        </button>
-                        <button class="color-btn" data-color="#000000" style="background: #000000;">
-                            <svg class="check-icon" viewBox="0 0 24 24"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg>
-                        </button>
-                    </div>
-                </div>
-                <div class="material-section">
-                    <h4>Finish</h4>
-                    <div class="material-options">
-                        <button class="material-btn active" data-material="glossy">Glossy</button>
-                        <button class="material-btn" data-material="matte">Matte</button>
-                        <button class="material-btn" data-material="metallic">Metallic</button>
-                    </div>
-                </div>
-                <div class="rim-section">
-                    <h4>Rims</h4>
-                    <div class="rim-options">
-                        <button class="rim-btn active" data-rim="sport">Sport</button>
-                        <button class="rim-btn" data-rim="racing">Racing</button>
-                        <button class="rim-btn" data-rim="classic">Classic</button>
-                    </div>
+
+            <div class="customize-section">
+                <p class="stat-lab" style="margin: 20px 0 10px;">Paint Type</p>
+                <div style="display: flex; gap: 5px;">
+                    <button class="btn-primary" data-action="material" data-value="glossy" style="font-size: 9px; padding: 10px;">GLOSS</button>
+                    <button class="btn-primary" data-action="material" data-value="matte" style="font-size: 9px; padding: 10px;">MATTE</button>
+                    <button class="btn-primary" data-action="material" data-value="metallic" style="font-size: 9px; padding: 10px;">METAL</button>
                 </div>
             </div>
         </div>
 
-        <!-- Specs Panel (Keep existing structure, CSS handles resize) -->
-        <div id="specs-panel" class="panel hidden">
-            <div class="specs-header">
-                <h3>SPECIFICATIONS</h3>
-            </div>
-            <div class="specs-content">
-                <div class="specs-category">
-                    <h4>ENGINE</h4>
-                    <ul>
-                        <li><span>Type</span><span>1.6L V6 Turbo</span></li>
-                        <li><span>Power</span><span>950+ HP</span></li>
-                    </ul>
+        <!-- SPECS PANEL -->
+        <div id="specs-panel" class="ui-panel hidden">
+            <h3 class="panel-title">TECHNICAL SPECS</h3>
+            <div class="specs-scroll-area" style="max-height: 300px; overflow-y: auto;">
+                <div class="spec-row" style="display:flex; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid #222;">
+                    <span class="stat-lab">Engine</span><span style="font-weight:700">1.6L V6 Turbo Hybrid</span>
                 </div>
-                <div class="specs-category">
-                    <h4>CHASSIS</h4>
-                    <ul>
-                        <li><span>Weight</span><span>798 kg</span></li>
-                        <li><span>Length</span><span>5.5 m</span></li>
-                    </ul>
+                <div class="spec-row" style="display:flex; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid #222;">
+                    <span class="stat-lab">ERS Power</span><span style="font-weight:700">350 kW</span>
                 </div>
-                <div class="specs-category">
-                    <h4>PERFORMANCE</h4>
-                    <ul>
-                        <li><span>Top Speed</span><span>372 km/h</span></li>
-                        <li><span>0-100</span><span>2.6 s</span></li>
-                    </ul>
+                <div class="spec-row" style="display:flex; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid #222;">
+                    <span class="stat-lab">Transmission</span><span style="font-weight:700">8-Speed Seamless</span>
+                </div>
+                <div class="spec-row" style="display:flex; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid #222;">
+                    <span class="stat-lab">Fuel</span><span style="font-weight:700">100% Sustainable</span>
                 </div>
             </div>
         </div>
 
-        <!-- Camera Controls -->
+        <!-- CAMERA OVERLAY -->
         <div id="camera-controls">
-            <button class="cam-btn active" data-cam="front">Front</button>
-            <button class="cam-btn" data-cam="side">Side</button>
-            <button class="cam-btn" data-cam="rear">Rear</button>
-            <button class="cam-btn" data-cam="top">Top</button>
-            <button class="cam-btn" data-cam="cockpit">Cockpit</button>
-            <button class="cam-btn" data-cam="orbit">360°</button>
+            <button class="cam-btn active" data-action="camera" data-value="front">FRONT</button>
+            <button class="cam-btn" data-action="camera" data-value="side">SIDE</button>
+            <button class="cam-btn" data-action="camera" data-value="rear">REAR</button>
+            <button class="cam-btn" data-action="camera" data-value="cockpit">COCKPIT</button>
+            <button class="cam-btn" data-action="camera" data-value="orbit">360°</button>
         </div>
 
-        <!-- Mini Map (Keep existing) -->
+        <!-- MINI MAP -->
         <div id="mini-map" class="hidden">
             <canvas id="mapCanvas"></canvas>
-            <div class="car-indicator"></div>
         </div>
 
-        <!-- Notification (Keep existing) -->
+        <!-- NOTIFICATION -->
         <div id="notification" class="notification hidden">
-            <span class="notification-text"></span>
+            <span class="notification-text">SYSTEM READY</span>
         </div>
 
-        <!-- Footer -->
+        <!-- FOOTER -->
         <footer id="footer">
-            <div class="footer-left">
-                <span>© 2026 F1 SHOWROOM</span>
-            </div>
-            <div class="footer-center">
-                <span class="instruction">Scroll to Zoom</span>
-            </div>
+            <div class="footer-left"><span>© 2026 F1 RACING DIVISION</span></div>
+            <div class="footer-center"><span>SCROLL TO ZOOM • DRAG TO ROTATE</span></div>
             <div class="footer-right">
-                <span class="fps-counter">FPS: <span id="fpsValue">60</span></span>
+                <span class="fps-counter">TELEMETRY: <span id="fpsValue">60</span> FPS</span>
             </div>
         </footer>
     </div>
 
-    <!-- Scripts -->
+    <!-- Initialization Script -->
     <script type="module" src="js/main.js"></script>
 </body>
 </html>
